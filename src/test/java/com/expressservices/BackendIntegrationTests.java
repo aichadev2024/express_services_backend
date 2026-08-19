@@ -58,7 +58,7 @@ class BackendIntegrationTests {
 
     @Test
     void testRegisterLivreur() {
-        RegisterRequest reg = new RegisterRequest("john_driver", "securepass123", "ROLE_LIVREUR", "Traoré", "John");
+        RegisterRequest reg = new RegisterRequest("john_driver", "securepass123", "ROLE_LIVREUR", "Traoré", "John", null);
         User user = authService.registerLivreur(reg);
         
         assertNotNull(user);
@@ -118,7 +118,7 @@ class BackendIntegrationTests {
         assertNull(res.getLivreurId());
         
         // Register a driver and assign
-        RegisterRequest reg = new RegisterRequest("driver_bob", "pass123", "ROLE_LIVREUR", "Bob", "Driver");
+        RegisterRequest reg = new RegisterRequest("driver_bob", "pass123", "ROLE_LIVREUR", "Bob", "Driver", null);
         User driver = authService.registerLivreur(reg);
         
         CommandeResponse assigned = commandeService.assignLivreur(res.getId(), driver.getId());
