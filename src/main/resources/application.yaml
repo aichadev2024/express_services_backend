@@ -1,0 +1,55 @@
+spring:
+  application:
+    name: express-services-api
+  
+  # Database configuration — PostgreSQL local (expressdb)
+  datasource:
+    url: ${DATABASE_URL:${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/expressdb}}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    baseline-version: 0
+    repair-on-migrate: true
+    validate-on-migrate: false
+    locations: classpath:db/migration
+
+  # Configuration de l'email via Brevo SMTP (utilisant des variables d'environnement avec valeurs par défaut)
+  mail:
+    host: ${SMTP_HOST:smtp-relay.brevo.com}
+    port: ${SMTP_PORT:587}
+    username: ${SMTP_USERNAME:${BREVO_SMTP_LOGIN:}}
+    password: ${SMTP_PASSWORD:${BREVO_API_KEY:}}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+# Configuration Brevo REST API v3 (pour l'envoi d'e-mails réels via API HTTPS)
+brevo:
+  api-key: ${BREVO_API_KEY:}
+  sender-email: ${BREVO_SENDER_EMAIL:expressesrvc@gmail.com}
+  sender-name: ${BREVO_SENDER_NAME:Express Services}
+
+# Configuration du port de l'application backend
+server:
+  port: ${PORT:8080}
+
+# JWT Configuration Parameters
+jwt:
+  secret: ${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
+  expiration: ${JWT_EXPIRATION:86400000} # 24 hours
