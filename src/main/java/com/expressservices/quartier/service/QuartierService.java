@@ -17,17 +17,7 @@ public class QuartierService {
         this. quartierRepository = quartierRepository;
     }
 
-    @PostConstruct
-    public void seedDefaultQuartiers() {
-        if (quartierRepository.count() == 0) {
-            quartierRepository.save(Quartier.builder().nom("Baguineda").tarifLivraison(2000.0).build());
-            quartierRepository.save(Quartier.builder().nom("Badalabougou").tarifLivraison(1000.0).build());
-            quartierRepository.save(Quartier.builder().nom("Hamdallaye").tarifLivraison(1500.0).build());
-            quartierRepository.save(Quartier.builder().nom("Baco-Djikoroni").tarifLivraison(1500.0).build());
-            quartierRepository.save(Quartier.builder().nom("Korofina").tarifLivraison(1200.0).build());
-            System.out.println("====== SYSTEM INITIALIZATION: Seeded default quartiers (Baguineda, Badalabougou, Hamdallaye, etc.) ======");
-        }
-    }
+
 
     public List<Quartier> getAllQuartiers() {
         return quartierRepository.findAll();
