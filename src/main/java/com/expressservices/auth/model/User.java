@@ -41,7 +41,7 @@ public class User {
 
     @Column(name = "first_login", nullable = false)
     @Builder.Default
-    private boolean firstLogin = true;
+    private boolean firstLogin = false;
 
     @Column(name = "otp_code")
     private String otpCode;

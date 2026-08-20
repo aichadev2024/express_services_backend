@@ -59,7 +59,7 @@ public class AuthService {
         user.setOtpCode(otpCode);
         user.setOtpExpiry(java.time.LocalDateTime.now().plusMinutes(10));
         user.setOtpVerified(false);
-        user.setFirstLogin(true);
+        user.setFirstLogin(false);
 
         String recipientName = (user.getPrenom() != null ? user.getPrenom() : "") + " " + (user.getNom() != null ? user.getNom() : "");
         emailService.sendOtpEmail(user.getEmail(), recipientName.trim(), user.getUsername(), clearTextPassword, otpCode);
