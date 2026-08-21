@@ -14,4 +14,5 @@ public class RegisterRequest {
     private String role; // "ROLE_ADMIN" or "ROLE_LIVREUR"
     private String nom;
     private String prenom;
+    private String telephone;
 }

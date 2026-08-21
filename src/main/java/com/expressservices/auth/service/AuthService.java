@@ -111,6 +111,7 @@ public class AuthService {
                 .role(Role.ROLE_LIVREUR)
                 .nom(request.getNom())
                 .prenom(request.getPrenom())
+                .telephone(request.getTelephone())
                 .build();
 
         User savedLivreur = userRepository.save(livreur);
@@ -144,6 +145,7 @@ public class AuthService {
                 .role(Role.ROLE_ADMIN)
                 .nom(request.getNom())
                 .prenom(request.getPrenom())
+                .telephone(request.getTelephone())
                 .build();
 
         User savedAdmin = userRepository.save(admin);

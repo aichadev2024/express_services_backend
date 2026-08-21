@@ -18,6 +18,7 @@ public class UserResponse {
     private String email;
     private String nom;
     private String prenom;
+    private String telephone;
     private String role;
     private String photoUrl;
     private LocalDateTime dateCreation;
@@ -29,6 +30,7 @@ public class UserResponse {
                 .email(user.getEmail())
                 .nom(user.getNom())
                 .prenom(user.getPrenom())
+                .telephone(user.getTelephone())
                 .role(user.getRole().name())
                 .photoUrl(user.getPhotoUrl())
                 .dateCreation(user.getDateCreation())

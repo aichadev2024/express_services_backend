@@ -28,6 +28,9 @@ public class User {
     private String nom;
 
     private String prenom;
+
+    @Column(name = "telephone")
+    private String telephone;
     
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
