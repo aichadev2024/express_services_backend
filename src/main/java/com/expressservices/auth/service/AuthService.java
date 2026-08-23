@@ -104,18 +104,23 @@ public class AuthService {
             throw new IllegalArgumentException("Ce nom d'utilisateur est déjà pris.");
         }
 
+        boolean hasEmail = request.getEmail() != null && !request.getEmail().trim().isEmpty();
+
         User livreur = User.builder()
                 .username(request.getUsername())
-                .email(request.getEmail())
+                .email(hasEmail ? request.getEmail().trim() : null)
                 .password(passwordEncoder.encode(request.getPassword()))
                 .role(Role.ROLE_LIVREUR)
                 .nom(request.getNom())
                 .prenom(request.getPrenom())
                 .telephone(request.getTelephone())
+                .otpVerified(!hasEmail)
                 .build();
 
         User savedLivreur = userRepository.save(livreur);
-        generateAndSendOtp(savedLivreur, request.getPassword());
+        if (hasEmail) {
+            generateAndSendOtp(savedLivreur, request.getPassword());
+        }
         return savedLivreur;
     }
 
@@ -192,6 +197,10 @@ public class AuthService {
 
         if (user.isOtpVerified()) {
             throw new IllegalArgumentException("Le compte est déjà vérifié.");
+        }
+
+        if (user.getEmail() == null || user.getEmail().trim().isEmpty()) {
+            throw new IllegalArgumentException("Ce compte ne possède pas d'adresse e-mail pour l'envoi de code OTP.");
         }
 
         generateAndSendOtp(user, "[Mot de passe inchangé]");

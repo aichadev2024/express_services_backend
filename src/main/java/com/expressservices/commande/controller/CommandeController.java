@@ -50,17 +50,18 @@ public class CommandeController {
     public ResponseEntity<List<CommandeResponse>> getAllCommandes(
             @RequestParam(required = false) String statut,
             @RequestParam(required = false) Long livreurId,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate date,
             Authentication authentication) {
 
         User currentUser = authService.getUserEntityByUsername(authentication.getName());
 
         // Security check: Drivers (Livreur) can only see their own assigned orders
         if (currentUser.getRole() == Role.ROLE_LIVREUR) {
-            return ResponseEntity.ok(commandeService.getAllCommandes(statut, currentUser.getId()));
+            return ResponseEntity.ok(commandeService.getAllCommandes(statut, currentUser.getId(), date));
         }
 
         // Admin can view all or filter freely
-        return ResponseEntity.ok(commandeService.getAllCommandes(statut, livreurId));
+        return ResponseEntity.ok(commandeService.getAllCommandes(statut, livreurId, date));
     }
 
     @GetMapping("/{id}")
@@ -130,5 +131,12 @@ public class CommandeController {
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity<DashboardStatsResponse> getDashboardStats() {
         return ResponseEntity.ok(commandeService.getDashboardStats());
+    }
+
+    @GetMapping("/daily-stats")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<com.expressservices.commande.dto.DailyDeliveryStatsResponse> getDailyDeliveryStats(
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate date) {
+        return ResponseEntity.ok(commandeService.getDailyDeliveryStats(date));
     }
 }
