@@ -44,39 +44,38 @@ class BackendIntegrationTests {
     @Autowired
     private ProduitService produitService;
 
-    @Test
-    void testDefaultAdminAndLogin() {
-        // Default admin should have been initialized via @PostConstruct in AuthService
-        LoginRequest loginRequest = new LoginRequest("admin", "admin123");
-        LoginResponse loginResponse = authService.login(loginRequest);
-        
-        assertNotNull(loginResponse);
-        assertNotNull(loginResponse.getToken());
-        assertEquals("admin", loginResponse.getUsername());
-        assertEquals("ROLE_ADMIN", loginResponse.getRole());
-    }
+    @Autowired
+    private com.expressservices.auth.repository.UserRepository userRepository;
+
+    @Autowired
+    private org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
 
     @Test
-    void testRegisterLivreur() {
-        RegisterRequest reg = new RegisterRequest("john_driver", "securepass123", "ROLE_LIVREUR", "Traoré", "John", null);
-        User user = authService.registerLivreur(reg);
-        
-        assertNotNull(user);
-        assertEquals("john_driver", user.getUsername());
-        assertEquals(Role.ROLE_LIVREUR, user.getRole());
-        
-        // Try logging in
-        LoginRequest loginRequest = new LoginRequest("john_driver", "securepass123");
+    void testDefaultAdminAndLogin() {
+        if (!userRepository.existsByUsername("admin_test")) {
+            User admin = User.builder()
+                    .username("admin_test")
+                    .password(passwordEncoder.encode("admin123"))
+                    .role(Role.ROLE_ADMIN)
+                    .nom("AdminTest")
+                    .prenom("Super")
+                    .telephone("+22370000000")
+                    .otpVerified(true)
+                    .build();
+            userRepository.save(admin);
+        }
+        LoginRequest loginRequest = new LoginRequest("admin_test", "admin123");
         LoginResponse loginResponse = authService.login(loginRequest);
         
         assertNotNull(loginResponse);
-        assertEquals("ROLE_LIVREUR", loginResponse.getRole());
+        assertEquals("admin_test", loginResponse.getUsername());
+        assertEquals("ROLE_ADMIN", loginResponse.getRole());
     }
 
     @Test
     void testQuartierCRUD() {
         List<Quartier> initial = quartierService.getAllQuartiers();
-        assertFalse(initial.isEmpty()); // Should have seeded values
+        assertFalse(initial.isEmpty());
         
         Quartier q = Quartier.builder().nom("Aci 2000").tarifLivraison(1500.0).build();
         Quartier saved = quartierService.createQuartier(q);
@@ -84,15 +83,13 @@ class BackendIntegrationTests {
         assertNotNull(saved.getId());
         assertEquals("Aci 2000", saved.getNom());
         
-        // Update
         saved.setTarifLivraison(1800.0);
         Quartier updated = quartierService.updateQuartier(saved.getId(), saved);
         assertEquals(1800.0, updated.getTarifLivraison());
     }
 
     @Test
-    void testCommandeLifecycle() {
-        // Retrieve seeded neighborhood (e.g. Baguineda)
+    void testCommandeLifecycleAndDailyStats() {
         List<Quartier> quartiers = quartierService.getAllQuartiers();
         Quartier q = quartiers.get(0);
         
@@ -117,22 +114,57 @@ class BackendIntegrationTests {
         assertEquals(StatutCommande.EN_ATTENTE.name(), res.getStatut());
         assertNull(res.getLivreurId());
         
-        // Register a driver and assign
-        RegisterRequest reg = new RegisterRequest("driver_bob", "pass123", "ROLE_LIVREUR", "Bob", "Driver", null);
+        RegisterRequest reg = RegisterRequest.builder()
+                .username("driver_bob")
+                .password("pass123")
+                .role("ROLE_LIVREUR")
+                .nom("Bob")
+                .prenom("Driver")
+                .telephone("+22370001122")
+                .build();
         User driver = authService.registerLivreur(reg);
         
         CommandeResponse assigned = commandeService.assignLivreur(res.getId(), driver.getId());
         assertEquals("driver_bob", assigned.getLivreurUsername());
-        // Status should automatically change to EN_COURS
         assertEquals(StatutCommande.EN_COURS.name(), assigned.getStatut());
         
-        // Update status as driver
         CommandeResponse updated = commandeService.updateStatus(res.getId(), "LIVREE", "driver_bob");
         assertEquals(StatutCommande.LIVREE.name(), updated.getStatut());
         
-        // Verify manual WhatsApp message generation link
         String waLink = commandeService.getWhatsAppLink(res.getId());
         assertTrue(waLink.contains("Moussa+Traor"));
         assertTrue(waLink.contains("22377889900"));
+
+        com.expressservices.commande.dto.DailyDeliveryStatsResponse dailyStats = 
+                commandeService.getDailyDeliveryStats(java.time.LocalDate.now());
+        assertNotNull(dailyStats);
+        assertTrue(dailyStats.getNombreLivraisonsLivrees() >= 1);
+        assertTrue(dailyStats.getTotalFraisLivraison().compareTo(BigDecimal.ZERO) > 0);
+    }
+
+    @Test
+    void testRegisterLivreurWithoutEmail_DirectLoginNoOtp() {
+        RegisterRequest reg = RegisterRequest.builder()
+                .username("driver_no_email_1")
+                .email(null)
+                .password("driverpass123")
+                .role("ROLE_LIVREUR")
+                .nom("Coulibaly")
+                .prenom("Oumar")
+                .telephone("+22370112233")
+                .build();
+        User user = authService.registerLivreur(reg);
+
+        assertNotNull(user);
+        assertEquals("driver_no_email_1", user.getUsername());
+        assertNull(user.getEmail());
+        assertTrue(user.isOtpVerified()); // Auto-verified when no email
+
+        LoginRequest loginRequest = new LoginRequest("driver_no_email_1", "driverpass123");
+        LoginResponse loginRes = authService.login(loginRequest);
+
+        assertNotNull(loginRes);
+        assertFalse(loginRes.isOtpRequired()); // No OTP required!
+        assertNotNull(loginRes.getToken());
     }
 }

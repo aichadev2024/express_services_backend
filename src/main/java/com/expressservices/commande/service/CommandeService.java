@@ -158,6 +158,11 @@ public class CommandeService {
 
     @Transactional(readOnly = true)
     public List<CommandeResponse> getAllCommandes(String statusStr, Long livreurId) {
+        return getAllCommandes(statusStr, livreurId, null);
+    }
+
+    @Transactional(readOnly = true)
+    public List<CommandeResponse> getAllCommandes(String statusStr, Long livreurId, java.time.LocalDate date) {
         List<Commande> list;
 
         StatutCommande status = null;
@@ -167,14 +172,29 @@ public class CommandeService {
             } catch (IllegalArgumentException ignored) {}
         }
 
-        if (livreurId != null && status != null) {
-            list = commandeRepository.findByLivreurIdAndStatutOrderByDateCreationDesc(livreurId, status);
-        } else if (livreurId != null) {
-            list = commandeRepository.findByLivreurIdOrderByDateCreationDesc(livreurId);
-        } else if (status != null) {
-            list = commandeRepository.findByStatutOrderByDateCreationDesc(status);
+        if (date != null) {
+            java.time.LocalDateTime start = date.atStartOfDay();
+            java.time.LocalDateTime end = date.atTime(23, 59, 59, 999999999);
+
+            if (livreurId != null && status != null) {
+                list = commandeRepository.findByLivreurIdAndStatutAndDateCreationBetweenOrderByDateCreationDesc(livreurId, status, start, end);
+            } else if (livreurId != null) {
+                list = commandeRepository.findByLivreurIdAndDateCreationBetweenOrderByDateCreationDesc(livreurId, start, end);
+            } else if (status != null) {
+                list = commandeRepository.findByStatutAndDateCreationBetweenOrderByDateCreationDesc(status, start, end);
+            } else {
+                list = commandeRepository.findByDateCreationBetweenOrderByDateCreationDesc(start, end);
+            }
         } else {
-            list = commandeRepository.findAllByOrderByDateCreationDesc();
+            if (livreurId != null && status != null) {
+                list = commandeRepository.findByLivreurIdAndStatutOrderByDateCreationDesc(livreurId, status);
+            } else if (livreurId != null) {
+                list = commandeRepository.findByLivreurIdOrderByDateCreationDesc(livreurId);
+            } else if (status != null) {
+                list = commandeRepository.findByStatutOrderByDateCreationDesc(status);
+            } else {
+                list = commandeRepository.findAllByOrderByDateCreationDesc();
+            }
         }
 
         return list.stream().map(this::mapToResponse).collect(Collectors.toList());
@@ -417,5 +437,112 @@ public class CommandeService {
         stats.put("partenaires", partners);
         stats.put("satisfaction", satisfaction);
         return stats;
+    }
+
+    @Transactional(readOnly = true)
+    public DailyDeliveryStatsResponse getDailyDeliveryStats(java.time.LocalDate targetDate) {
+        java.time.LocalDate date = targetDate != null ? targetDate : java.time.LocalDate.now();
+        java.time.LocalDateTime startOfDay = date.atStartOfDay();
+        java.time.LocalDateTime endOfDay = date.atTime(23, 59, 59, 999999999);
+
+        List<Commande> dayOrders = commandeRepository.findByDateCreationBetweenOrderByDateCreationDesc(startOfDay, endOfDay);
+        List<Commande> deliveredOrders = dayOrders.stream()
+                .filter(c -> c.getStatut() == StatutCommande.LIVREE)
+                .collect(Collectors.toList());
+
+        long totalLivraisonsDuJour = dayOrders.size();
+        long nombreLivraisonsLivrees = deliveredOrders.size();
+
+        BigDecimal totalFraisLivraison = deliveredOrders.stream()
+                .map(c -> c.getQuartier() != null ? BigDecimal.valueOf(c.getQuartier().getTarifLivraison()) : BigDecimal.ZERO)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal totalMontantMarchandises = deliveredOrders.stream()
+                .map(Commande::getMontantProduits)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal totalMontantGlobal = deliveredOrders.stream()
+                .map(Commande::getMontantTotal)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        List<User> drivers = authService.getAllLivreurs();
+        List<LivreurDailyStatDto> livreursStats = drivers.stream().map(driver -> {
+            List<Commande> driverDayOrders = dayOrders.stream()
+                    .filter(c -> c.getLivreur() != null && c.getLivreur().getId().equals(driver.getId()))
+                    .collect(Collectors.toList());
+
+            List<Commande> driverDeliveredOrders = driverDayOrders.stream()
+                    .filter(c -> c.getStatut() == StatutCommande.LIVREE)
+                    .collect(Collectors.toList());
+
+            BigDecimal driverFrais = driverDeliveredOrders.stream()
+                    .map(c -> c.getQuartier() != null ? BigDecimal.valueOf(c.getQuartier().getTarifLivraison()) : BigDecimal.ZERO)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            BigDecimal driverMarchandises = driverDeliveredOrders.stream()
+                    .map(Commande::getMontantProduits)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            BigDecimal driverGlobal = driverDeliveredOrders.stream()
+                    .map(Commande::getMontantTotal)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            return LivreurDailyStatDto.builder()
+                    .livreurId(driver.getId())
+                    .livreurUsername(driver.getUsername())
+                    .livreurNom(driver.getNom())
+                    .livreurPrenom(driver.getPrenom())
+                    .livreurTelephone(driver.getTelephone())
+                    .nombreLivraisonsAssignees(driverDayOrders.size())
+                    .nombreLivraisonsLivrees(driverDeliveredOrders.size())
+                    .totalFraisLivraison(driverFrais)
+                    .totalMontantMarchandises(driverMarchandises)
+                    .totalMontantGlobal(driverGlobal)
+                    .build();
+        }).collect(Collectors.toList());
+
+        List<DailyHistoryStatDto> historique7Jours = new ArrayList<>();
+        for (int i = 6; i >= 0; i--) {
+            java.time.LocalDate hDate = date.minusDays(i);
+            java.time.LocalDateTime hStart = hDate.atStartOfDay();
+            java.time.LocalDateTime hEnd = hDate.atTime(23, 59, 59, 999999999);
+
+            List<Commande> hOrders = commandeRepository.findByDateCreationBetweenOrderByDateCreationDesc(hStart, hEnd);
+            List<Commande> hDelivered = hOrders.stream()
+                    .filter(c -> c.getStatut() == StatutCommande.LIVREE)
+                    .collect(Collectors.toList());
+
+            BigDecimal hFrais = hDelivered.stream()
+                    .map(c -> c.getQuartier() != null ? BigDecimal.valueOf(c.getQuartier().getTarifLivraison()) : BigDecimal.ZERO)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            BigDecimal hMarchandises = hDelivered.stream()
+                    .map(Commande::getMontantProduits)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            BigDecimal hGlobal = hDelivered.stream()
+                    .map(Commande::getMontantTotal)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            historique7Jours.add(DailyHistoryStatDto.builder()
+                    .date(hDate)
+                    .totalLivraisons(hOrders.size())
+                    .totalCommandesLivrees(hDelivered.size())
+                    .totalFraisLivraison(hFrais)
+                    .totalMontantMarchandises(hMarchandises)
+                    .totalMontantGlobal(hGlobal)
+                    .build());
+        }
+
+        return DailyDeliveryStatsResponse.builder()
+                .date(date)
+                .totalLivraisonsDuJour(totalLivraisonsDuJour)
+                .nombreLivraisonsLivrees(nombreLivraisonsLivrees)
+                .totalFraisLivraison(totalFraisLivraison)
+                .totalMontantMarchandises(totalMontantMarchandises)
+                .totalMontantGlobal(totalMontantGlobal)
+                .livreursStats(livreursStats)
+                .historique7Jours(historique7Jours)
+                .build();
     }
 }
