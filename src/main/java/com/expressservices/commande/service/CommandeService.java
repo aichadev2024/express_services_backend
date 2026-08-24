@@ -467,9 +467,15 @@ public class CommandeService {
 
         long totalLivraisonsDuJour = dayOrders.size();
         long nombreLivraisonsLivrees = deliveredOrders.size();
+        long totalLivraisonsGratuites = deliveredOrders.stream()
+                .filter(c -> Boolean.TRUE.equals(c.getLivraisonGratuite()))
+                .count();
 
+        // 0 FCFA delivery fee counted if livraisonGratuite is true
         BigDecimal totalFraisLivraison = deliveredOrders.stream()
-                .map(c -> c.getQuartier() != null ? BigDecimal.valueOf(c.getQuartier().getTarifLivraison()) : BigDecimal.ZERO)
+                .map(c -> Boolean.TRUE.equals(c.getLivraisonGratuite())
+                        ? BigDecimal.ZERO
+                        : (c.getQuartier() != null ? BigDecimal.valueOf(c.getQuartier().getTarifLivraison()) : BigDecimal.ZERO))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         BigDecimal totalMontantMarchandises = deliveredOrders.stream()
@@ -490,8 +496,14 @@ public class CommandeService {
                     .filter(c -> c.getStatut() == StatutCommande.LIVREE)
                     .collect(Collectors.toList());
 
+            long driverGratuites = driverDeliveredOrders.stream()
+                    .filter(c -> Boolean.TRUE.equals(c.getLivraisonGratuite()))
+                    .count();
+
             BigDecimal driverFrais = driverDeliveredOrders.stream()
-                    .map(c -> c.getQuartier() != null ? BigDecimal.valueOf(c.getQuartier().getTarifLivraison()) : BigDecimal.ZERO)
+                    .map(c -> Boolean.TRUE.equals(c.getLivraisonGratuite())
+                            ? BigDecimal.ZERO
+                            : (c.getQuartier() != null ? BigDecimal.valueOf(c.getQuartier().getTarifLivraison()) : BigDecimal.ZERO))
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
 
             BigDecimal driverMarchandises = driverDeliveredOrders.stream()
@@ -510,6 +522,7 @@ public class CommandeService {
                     .livreurTelephone(driver.getTelephone())
                     .nombreLivraisonsAssignees(driverDayOrders.size())
                     .nombreLivraisonsLivrees(driverDeliveredOrders.size())
+                    .totalLivraisonsGratuites(driverGratuites)
                     .totalFraisLivraison(driverFrais)
                     .totalMontantMarchandises(driverMarchandises)
                     .totalMontantGlobal(driverGlobal)
@@ -527,8 +540,14 @@ public class CommandeService {
                     .filter(c -> c.getStatut() == StatutCommande.LIVREE)
                     .collect(Collectors.toList());
 
+            long hGratuites = hDelivered.stream()
+                    .filter(c -> Boolean.TRUE.equals(c.getLivraisonGratuite()))
+                    .count();
+
             BigDecimal hFrais = hDelivered.stream()
-                    .map(c -> c.getQuartier() != null ? BigDecimal.valueOf(c.getQuartier().getTarifLivraison()) : BigDecimal.ZERO)
+                    .map(c -> Boolean.TRUE.equals(c.getLivraisonGratuite())
+                            ? BigDecimal.ZERO
+                            : (c.getQuartier() != null ? BigDecimal.valueOf(c.getQuartier().getTarifLivraison()) : BigDecimal.ZERO))
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
 
             BigDecimal hMarchandises = hDelivered.stream()
@@ -543,6 +562,7 @@ public class CommandeService {
                     .date(hDate)
                     .totalLivraisons(hOrders.size())
                     .totalCommandesLivrees(hDelivered.size())
+                    .totalLivraisonsGratuites(hGratuites)
                     .totalFraisLivraison(hFrais)
                     .totalMontantMarchandises(hMarchandises)
                     .totalMontantGlobal(hGlobal)
@@ -553,6 +573,7 @@ public class CommandeService {
                 .date(date)
                 .totalLivraisonsDuJour(totalLivraisonsDuJour)
                 .nombreLivraisonsLivrees(nombreLivraisonsLivrees)
+                .totalLivraisonsGratuites(totalLivraisonsGratuites)
                 .totalFraisLivraison(totalFraisLivraison)
                 .totalMontantMarchandises(totalMontantMarchandises)
                 .totalMontantGlobal(totalMontantGlobal)
