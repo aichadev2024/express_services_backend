@@ -19,6 +19,7 @@ public class LivreurDailyStatDto {
     private String livreurTelephone;
     private long nombreLivraisonsAssignees;
     private long nombreLivraisonsLivrees;
+    private long totalLivraisonsGratuites;
     private BigDecimal totalFraisLivraison;
     private BigDecimal totalMontantMarchandises;
     private BigDecimal totalMontantGlobal;
