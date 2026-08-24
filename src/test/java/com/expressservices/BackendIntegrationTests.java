@@ -167,4 +167,39 @@ class BackendIntegrationTests {
         assertFalse(loginRes.isOtpRequired()); // No OTP required!
         assertNotNull(loginRes.getToken());
     }
+
+    @Test
+    void testCustomPricingAndFreeDelivery() {
+        List<Quartier> quartiers = quartierService.getAllQuartiers();
+        Quartier q = quartiers.get(0);
+
+        ProduitResponse p = produitService.createProduit(new ProduitRequest(
+                "Article Prix Variable", BigDecimal.valueOf(5000), null, 20, true, null));
+
+        // Commande avec prix unitaire personnalisé (7500 au lieu de 5000) et livraison gratuite
+        LigneProduitRequest line = LigneProduitRequest.builder()
+                .produitId(p.getId())
+                .quantite(2)
+                .prixUnitaire(BigDecimal.valueOf(7500))
+                .build();
+
+        CommandeRequest req = CommandeRequest.builder()
+                .nomClient("Awa Diallo")
+                .telephoneClient("+22366554433")
+                .lignesProduits(List.of(line))
+                .quartierId(q.getId())
+                .adressePrecise("Hippodrome Bamako")
+                .livraisonGratuite(true)
+                .build();
+
+        CommandeResponse res = commandeService.createCommande(req);
+
+        assertNotNull(res);
+        assertTrue(res.getLivraisonGratuite());
+        assertEquals(0.0, res.getTarifLivraisonEffective());
+        // 2 * 7500 = 15000 pour les marchandises + 0 pour la livraison
+        assertEquals(BigDecimal.valueOf(15000), res.getMontantProduits());
+        assertEquals(BigDecimal.valueOf(15000), res.getMontantTotal());
+        assertEquals(BigDecimal.valueOf(15000), res.getMontantAEncaisser());
+    }
 }

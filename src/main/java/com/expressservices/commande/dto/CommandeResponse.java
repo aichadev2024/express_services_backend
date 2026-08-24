@@ -37,4 +37,7 @@ public class CommandeResponse {
     private String partenaireNom;
     private String descriptionArticle;
     private String motifAnnulation;
+    private Boolean livraisonGratuite;
+    private Double tarifLivraisonEffective;
+    private BigDecimal montantAEncaisser;
 }

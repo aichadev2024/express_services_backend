@@ -23,4 +23,5 @@ public class CommandeRequest {
     private LocalDateTime dateHeureSouhaitee;
     private Long partenaireId;
     private String descriptionArticle;
+    private Boolean livraisonGratuite;
 }

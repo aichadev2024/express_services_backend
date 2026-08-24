@@ -74,11 +74,18 @@ public class Commande {
     @Column(name = "motif_annulation", columnDefinition = "TEXT")
     private String motifAnnulation;
 
+    @Column(name = "livraison_gratuite")
+    @Builder.Default
+    private Boolean livraisonGratuite = false;
+
     @PrePersist
     protected void onCreate() {
         this.dateCreation = LocalDateTime.now();
         if (this.statut == null) {
             this.statut = StatutCommande.EN_ATTENTE;
+        }
+        if (this.livraisonGratuite == null) {
+            this.livraisonGratuite = false;
         }
     }
 
@@ -90,8 +97,15 @@ public class Commande {
     }
 
     @Transient
+    public BigDecimal getTarifLivraisonEffective() {
+        if (Boolean.TRUE.equals(livraisonGratuite)) {
+            return BigDecimal.ZERO;
+        }
+        return quartier != null ? BigDecimal.valueOf(quartier.getTarifLivraison()) : BigDecimal.ZERO;
+    }
+
+    @Transient
     public BigDecimal getMontantTotal() {
-        BigDecimal tarif = quartier != null ? BigDecimal.valueOf(quartier.getTarifLivraison()) : BigDecimal.ZERO;
-        return getMontantProduits().add(tarif);
+        return getMontantProduits().add(getTarifLivraisonEffective());
     }
 }
