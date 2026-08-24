@@ -581,4 +581,138 @@ public class CommandeService {
                 .historique7Jours(historique7Jours)
                 .build();
     }
+
+    @Transactional(readOnly = true)
+    public MonthlyDeliveryStatsResponse getMonthlyDeliveryStats(Integer targetYear, Integer targetMonth) {
+        java.time.LocalDate now = java.time.LocalDate.now();
+        int year = targetYear != null ? targetYear : now.getYear();
+        int month = targetMonth != null ? targetMonth : now.getMonthValue();
+
+        java.time.LocalDateTime startOfMonth = java.time.LocalDateTime.of(year, month, 1, 0, 0, 0);
+        java.time.LocalDateTime endOfMonth = startOfMonth.plusMonths(1).minusNanos(1);
+
+        List<Commande> monthOrders = commandeRepository.findByDateCreationBetweenOrderByDateCreationDesc(startOfMonth, endOfMonth);
+        List<Commande> deliveredOrders = monthOrders.stream()
+                .filter(c -> c.getStatut() == StatutCommande.LIVREE)
+                .collect(Collectors.toList());
+
+        long totalLivraisons = monthOrders.size();
+        long totalCommandesLivrees = deliveredOrders.size();
+        long totalLivraisonsGratuites = deliveredOrders.stream()
+                .filter(c -> Boolean.TRUE.equals(c.getLivraisonGratuite()))
+                .count();
+
+        // Gains Plateforme = delivery fees from paid delivered orders
+        BigDecimal gainsPlateforme = deliveredOrders.stream()
+                .map(Commande::getTarifLivraisonEffective)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        // Gains Marchandises = merchandise total for delivered orders
+        BigDecimal gainsMarchandises = deliveredOrders.stream()
+                .map(Commande::getMontantProduits)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal gainsGlobal = gainsPlateforme.add(gainsMarchandises);
+
+        // Breakdown by Partenaire
+        List<com.expressservices.partenaire.dto.PartenaireResponse> allPartenaires = partenaireService.getAllPartenaires();
+        List<PartenaireMonthlyStatDto> partenairesStats = new ArrayList<>();
+
+        for (com.expressservices.partenaire.dto.PartenaireResponse p : allPartenaires) {
+            List<Commande> pDelivered = deliveredOrders.stream()
+                    .filter(c -> c.getPartenaire() != null && c.getPartenaire().getId().equals(p.getId()))
+                    .collect(Collectors.toList());
+
+            BigDecimal pGains = pDelivered.stream()
+                    .map(Commande::getMontantProduits)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            double percentage = gainsMarchandises.compareTo(BigDecimal.ZERO) > 0
+                    ? pGains.doubleValue() / gainsMarchandises.doubleValue() * 100.0
+                    : 0.0;
+
+            partenairesStats.add(PartenaireMonthlyStatDto.builder()
+                    .partenaireId(p.getId())
+                    .partenaireNom(p.getNom())
+                    .nombreCommandes(pDelivered.size())
+                    .gainsPartenaire(pGains)
+                    .pourcentageDuTotal(Math.round(percentage * 10.0) / 10.0)
+                    .build());
+        }
+
+        // Add non-partner / particulier orders if any exist
+        List<Commande> noPartnerDelivered = deliveredOrders.stream()
+                .filter(c -> c.getPartenaire() == null)
+                .collect(Collectors.toList());
+
+        if (!noPartnerDelivered.isEmpty()) {
+            BigDecimal npGains = noPartnerDelivered.stream()
+                    .map(Commande::getMontantProduits)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            double npPercentage = gainsMarchandises.compareTo(BigDecimal.ZERO) > 0
+                    ? npGains.doubleValue() / gainsMarchandises.doubleValue() * 100.0
+                    : 0.0;
+
+            partenairesStats.add(PartenaireMonthlyStatDto.builder()
+                    .partenaireId(null)
+                    .partenaireNom("Ventes Directes / Particuliers")
+                    .nombreCommandes(noPartnerDelivered.size())
+                    .gainsPartenaire(npGains)
+                    .pourcentageDuTotal(Math.round(npPercentage * 10.0) / 10.0)
+                    .build());
+        }
+
+        // Sort partners by gains descending
+        partenairesStats.sort((a, b) -> b.getGainsPartenaire().compareTo(a.getGainsPartenaire()));
+
+        // Top Livreurs ranking
+        List<User> drivers = authService.getAllLivreurs();
+        List<LivreurMonthlyStatDto> livreursStats = new ArrayList<>();
+
+        for (User driver : drivers) {
+            List<Commande> driverDelivered = deliveredOrders.stream()
+                    .filter(c -> c.getLivreur() != null && c.getLivreur().getId().equals(driver.getId()))
+                    .collect(Collectors.toList());
+
+            BigDecimal driverFrais = driverDelivered.stream()
+                    .map(Commande::getTarifLivraisonEffective)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            BigDecimal driverMarchandises = driverDelivered.stream()
+                    .map(Commande::getMontantProduits)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            livreursStats.add(LivreurMonthlyStatDto.builder()
+                    .livreurId(driver.getId())
+                    .livreurUsername(driver.getUsername())
+                    .livreurNom(driver.getNom())
+                    .livreurPrenom(driver.getPrenom())
+                    .livreurTelephone(driver.getTelephone())
+                    .nombreLivraisons(driverDelivered.size())
+                    .totalFraisEncaisse(driverFrais)
+                    .totalMarchandisesLivrees(driverMarchandises)
+                    .build());
+        }
+
+        // Sort drivers by delivered count descending
+        livreursStats.sort((a, b) -> Long.compare(b.getNombreLivraisons(), a.getNombreLivraisons()));
+
+        for (int i = 0; i < livreursStats.size(); i++) {
+            livreursStats.get(i).setRang(i + 1);
+        }
+
+        return MonthlyDeliveryStatsResponse.builder()
+                .year(year)
+                .month(month)
+                .totalLivraisons(totalLivraisons)
+                .totalCommandesLivrees(totalCommandesLivrees)
+                .totalLivraisonsGratuites(totalLivraisonsGratuites)
+                .gainsPlateforme(gainsPlateforme)
+                .gainsMarchandises(gainsMarchandises)
+                .gainsGlobal(gainsGlobal)
+                .partenairesStats(partenairesStats)
+                .topLivreurs(livreursStats)
+                .build();
+    }
 }
