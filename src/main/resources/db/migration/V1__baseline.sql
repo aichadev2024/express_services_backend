@@ -1,5 +1,15 @@
 DO $$
 BEGIN
+    -- Drop orphan relation uq_app_users_username if it exists without being attached to an active app_users constraint
+    IF EXISTS (SELECT 1 FROM pg_class WHERE relname = 'uq_app_users_username') 
+       AND NOT EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'app_users') THEN
+        BEGIN
+            EXECUTE 'DROP INDEX IF EXISTS uq_app_users_username CASCADE';
+        EXCEPTION WHEN OTHERS THEN
+            NULL;
+        END;
+    END IF;
+
     IF NOT EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'app_users') 
        AND NOT EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'utilisateurs') THEN
         CREATE TABLE app_users (
@@ -16,7 +26,11 @@ BEGIN
     IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'app_users') THEN
         IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'uq_app_users_username') 
            AND NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'uq_app_users_username') THEN
-            ALTER TABLE app_users ADD CONSTRAINT uq_app_users_username UNIQUE (username);
+            BEGIN
+                ALTER TABLE app_users ADD CONSTRAINT uq_app_users_username UNIQUE (username);
+            EXCEPTION WHEN OTHERS THEN
+                NULL;
+            END;
         END IF;
     END IF;
 
@@ -31,7 +45,11 @@ BEGIN
     IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'quartiers') THEN
         IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'uq_quartiers_nom') 
            AND NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'uq_quartiers_nom') THEN
-            ALTER TABLE quartiers ADD CONSTRAINT uq_quartiers_nom UNIQUE (nom);
+            BEGIN
+                ALTER TABLE quartiers ADD CONSTRAINT uq_quartiers_nom UNIQUE (nom);
+            EXCEPTION WHEN OTHERS THEN
+                NULL;
+            END;
         END IF;
     END IF;
 
@@ -65,14 +83,22 @@ BEGIN
 
     IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'commandes') THEN
         IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_commandes_quartier') THEN
-            ALTER TABLE commandes ADD CONSTRAINT fk_commandes_quartier FOREIGN KEY (quartier_id) REFERENCES quartiers (id);
+            BEGIN
+                ALTER TABLE commandes ADD CONSTRAINT fk_commandes_quartier FOREIGN KEY (quartier_id) REFERENCES quartiers (id);
+            EXCEPTION WHEN OTHERS THEN
+                NULL;
+            END;
         END IF;
         IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_commandes_livreur') THEN
-            IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'app_users') THEN
-                ALTER TABLE commandes ADD CONSTRAINT fk_commandes_livreur FOREIGN KEY (livreur_id) REFERENCES app_users (id);
-            ELSIF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'utilisateurs') THEN
-                ALTER TABLE commandes ADD CONSTRAINT fk_commandes_livreur FOREIGN KEY (livreur_id) REFERENCES utilisateurs (id);
-            END IF;
+            BEGIN
+                IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'app_users') THEN
+                    ALTER TABLE commandes ADD CONSTRAINT fk_commandes_livreur FOREIGN KEY (livreur_id) REFERENCES app_users (id);
+                ELSIF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'utilisateurs') THEN
+                    ALTER TABLE commandes ADD CONSTRAINT fk_commandes_livreur FOREIGN KEY (livreur_id) REFERENCES utilisateurs (id);
+                END IF;
+            EXCEPTION WHEN OTHERS THEN
+                NULL;
+            END;
         END IF;
     END IF;
 
@@ -88,10 +114,18 @@ BEGIN
 
     IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'commande_produits') THEN
         IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_commande_produits_commande') THEN
-            ALTER TABLE commande_produits ADD CONSTRAINT fk_commande_produits_commande FOREIGN KEY (commande_id) REFERENCES commandes (id);
+            BEGIN
+                ALTER TABLE commande_produits ADD CONSTRAINT fk_commande_produits_commande FOREIGN KEY (commande_id) REFERENCES commandes (id);
+            EXCEPTION WHEN OTHERS THEN
+                NULL;
+            END;
         END IF;
         IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_commande_produits_produit') THEN
-            ALTER TABLE commande_produits ADD CONSTRAINT fk_commande_produits_produit FOREIGN KEY (produit_id) REFERENCES produits (id);
+            BEGIN
+                ALTER TABLE commande_produits ADD CONSTRAINT fk_commande_produits_produit FOREIGN KEY (produit_id) REFERENCES produits (id);
+            EXCEPTION WHEN OTHERS THEN
+                NULL;
+            END;
         END IF;
     END IF;
 END $$;
