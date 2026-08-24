@@ -131,7 +131,7 @@ public class ProduitService {
         return produits.stream().map(p -> {
             Integer sortis = commandeProduitRepository.sumQuantiteByProduitIdAndStatutIn(
                     p.getId(), 
-                    Arrays.asList(StatutCommande.EN_COURS)
+                    Arrays.asList(StatutCommande.EN_ATTENTE, StatutCommande.EN_COURS, StatutCommande.LIVREE)
             );
             
             Integer retournes = commandeProduitRepository.sumQuantiteByProduitIdAndStatutIn(
