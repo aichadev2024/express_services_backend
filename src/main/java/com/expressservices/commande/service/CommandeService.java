@@ -62,6 +62,7 @@ public class CommandeService {
                 .statut(StatutCommande.EN_ATTENTE)
                 .partenaire(partenaire)
                 .descriptionArticle(request.getDescriptionArticle())
+                .livraisonGratuite(Boolean.TRUE.equals(request.getLivraisonGratuite()))
                 .build();
 
         // Résoudre les produits et créer les lignes
@@ -73,11 +74,15 @@ public class CommandeService {
                 validateProduitAppartientAuPartenaire(produit, partenaire);
                 produitService.decrementStock(produit.getId(), ligneReq.getQuantite());
 
+                BigDecimal prixEffectif = (ligneReq.getPrixUnitaire() != null && ligneReq.getPrixUnitaire().compareTo(BigDecimal.ZERO) >= 0)
+                        ? ligneReq.getPrixUnitaire()
+                        : produit.getPrix();
+
                 CommandeProduit ligne = CommandeProduit.builder()
                         .commande(commande)
                         .produit(produit)
                         .quantite(ligneReq.getQuantite())
-                        .prixUnitaire(produit.getPrix()) // snapshot du prix actuel
+                        .prixUnitaire(prixEffectif)
                         .build();
                 lignes.add(ligne);
             }
@@ -129,6 +134,9 @@ public class CommandeService {
         commande.setLongitude(request.getLongitude());
         commande.setDateHeureSouhaitee(request.getDateHeureSouhaitee());
         commande.setPartenaire(partenaire);
+        if (request.getLivraisonGratuite() != null) {
+            commande.setLivraisonGratuite(request.getLivraisonGratuite());
+        }
         commande.setDescriptionArticle(request.getDescriptionArticle());
 
         // Remplace entièrement les lignes de produits (orphanRemoval supprime les anciennes)
@@ -143,11 +151,15 @@ public class CommandeService {
                     produitService.decrementStock(produit.getId(), ligneReq.getQuantite());
                 }
 
+                BigDecimal prixEffectif = (ligneReq.getPrixUnitaire() != null && ligneReq.getPrixUnitaire().compareTo(BigDecimal.ZERO) >= 0)
+                        ? ligneReq.getPrixUnitaire()
+                        : produit.getPrix();
+
                 CommandeProduit ligne = CommandeProduit.builder()
                         .commande(commande)
                         .produit(produit)
                         .quantite(ligneReq.getQuantite())
-                        .prixUnitaire(produit.getPrix())
+                        .prixUnitaire(prixEffectif)
                         .build();
                 commande.getLignesProduits().add(ligne);
             }
@@ -321,6 +333,9 @@ public class CommandeService {
                 .partenaireNom(commande.getPartenaire() != null ? commande.getPartenaire().getNom() : null)
                 .descriptionArticle(commande.getDescriptionArticle())
                 .motifAnnulation(commande.getMotifAnnulation())
+                .livraisonGratuite(commande.getLivraisonGratuite())
+                .tarifLivraisonEffective(commande.getTarifLivraisonEffective() != null ? commande.getTarifLivraisonEffective().doubleValue() : 0.0)
+                .montantAEncaisser(commande.getMontantTotal())
                 .build();
     }
 
