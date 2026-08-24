@@ -17,6 +17,7 @@ public class DailyDeliveryStatsResponse {
     private LocalDate date;
     private long totalLivraisonsDuJour;
     private long nombreLivraisonsLivrees;
+    private long totalLivraisonsGratuites;
     private BigDecimal totalFraisLivraison;
     private BigDecimal totalMontantMarchandises;
     private BigDecimal totalMontantGlobal;
