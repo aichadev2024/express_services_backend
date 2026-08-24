@@ -139,4 +139,12 @@ public class CommandeController {
             @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate date) {
         return ResponseEntity.ok(commandeService.getDailyDeliveryStats(date));
     }
+
+    @GetMapping("/monthly-stats")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<com.expressservices.commande.dto.MonthlyDeliveryStatsResponse> getMonthlyDeliveryStats(
+            @RequestParam(required = false) Integer year,
+            @RequestParam(required = false) Integer month) {
+        return ResponseEntity.ok(commandeService.getMonthlyDeliveryStats(year, month));
+    }
 }
