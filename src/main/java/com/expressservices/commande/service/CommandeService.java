@@ -46,9 +46,13 @@ public class CommandeService {
     public CommandeResponse createCommande(CommandeRequest request) {
         Quartier quartier = quartierService.getQuartierById(request.getQuartierId());
 
-        Partenaire partenaire = request.getPartenaireId() != null
-                ? partenaireService.getPartenaireEntityById(request.getPartenaireId())
-                : null;
+        Partenaire partenaire = null;
+        if (request.getPartenaireId() != null) {
+            partenaire = partenaireService.getPartenaireEntityById(request.getPartenaireId());
+        } else if (request.getNomExpediteur() != null && !request.getNomExpediteur().trim().isEmpty()) {
+            // Frictionless auto-registration
+            partenaire = partenaireService.getOrCreatePartenaire(request.getNomExpediteur(), request.getTelephoneExpediteur());
+        }
 
         Commande commande = Commande.builder()
                 .nomClient(request.getNomClient())
