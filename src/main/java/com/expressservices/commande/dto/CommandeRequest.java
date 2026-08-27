@@ -24,4 +24,9 @@ public class CommandeRequest {
     private Long partenaireId;
     private String descriptionArticle;
     private Boolean livraisonGratuite;
+    
+    // Frictionless onboarding / Auto-registration fields
+    private String nomExpediteur;
+    private String telephoneExpediteur;
+    private String adresseExpediteur;
 }

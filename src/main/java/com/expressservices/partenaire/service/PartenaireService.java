@@ -61,4 +61,21 @@ public class PartenaireService {
         return partenaireRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Partenaire introuvable avec ID: " + id));
     }
+
+    /**
+     * Utilisé pour "Frictionless Onboarding" : créer automatiquement le partenaire
+     * s'il n'existe pas lors de sa première commande publique.
+     */
+    public Partenaire getOrCreatePartenaire(String nom, String telephone) {
+        if (nom == null || nom.trim().isEmpty()) {
+            return null;
+        }
+        return partenaireRepository.findByNom(nom.trim()).orElseGet(() -> {
+            Partenaire nouveauPartenaire = Partenaire.builder()
+                    .nom(nom.trim())
+                    .telephone(telephone != null ? telephone.trim() : "")
+                    .build();
+            return partenaireRepository.save(nouveauPartenaire);
+        });
+    }
 }

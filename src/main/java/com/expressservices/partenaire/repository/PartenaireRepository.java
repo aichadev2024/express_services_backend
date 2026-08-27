@@ -7,4 +7,5 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface PartenaireRepository extends JpaRepository<Partenaire, Long> {
     boolean existsByNom(String nom);
+    java.util.Optional<Partenaire> findByNom(String nom);
 }
