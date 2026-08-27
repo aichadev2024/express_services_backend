@@ -29,4 +29,5 @@ public class CommandeRequest {
     private String nomExpediteur;
     private String telephoneExpediteur;
     private String adresseExpediteur;
+    private java.math.BigDecimal montantMarchandises;
 }
