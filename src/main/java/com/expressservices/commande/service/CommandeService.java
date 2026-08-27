@@ -64,9 +64,9 @@ public class CommandeService {
                 .longitude(request.getLongitude())
                 .dateHeureSouhaitee(request.getDateHeureSouhaitee())
                 .statut(StatutCommande.EN_ATTENTE)
-                .partenaire(partenaire)
                 .descriptionArticle(request.getDescriptionArticle())
                 .livraisonGratuite(Boolean.TRUE.equals(request.getLivraisonGratuite()))
+                .montantMarchandises(request.getMontantMarchandises())
                 .build();
 
         // Résoudre les produits et créer les lignes
@@ -141,6 +141,7 @@ public class CommandeService {
         if (request.getLivraisonGratuite() != null) {
             commande.setLivraisonGratuite(request.getLivraisonGratuite());
         }
+        commande.setMontantMarchandises(request.getMontantMarchandises());
         commande.setDescriptionArticle(request.getDescriptionArticle());
 
         // Remplace entièrement les lignes de produits (orphanRemoval supprime les anciennes)

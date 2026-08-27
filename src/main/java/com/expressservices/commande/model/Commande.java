@@ -78,6 +78,9 @@ public class Commande {
     @Builder.Default
     private Boolean livraisonGratuite = false;
 
+    @Column(name = "montant_marchandises", precision = 10, scale = 2)
+    private BigDecimal montantMarchandises;
+
     @PrePersist
     protected void onCreate() {
         this.dateCreation = LocalDateTime.now();
@@ -91,9 +94,12 @@ public class Commande {
 
     @Transient
     public BigDecimal getMontantProduits() {
-        return lignesProduits.stream()
-                .map(CommandeProduit::getSousTotal)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        if (lignesProduits != null && !lignesProduits.isEmpty()) {
+            return lignesProduits.stream()
+                    .map(CommandeProduit::getSousTotal)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+        }
+        return montantMarchandises != null ? montantMarchandises : BigDecimal.ZERO;
     }
 
     @Transient
