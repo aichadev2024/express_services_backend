@@ -67,6 +67,7 @@ public class CommandeService {
                 .descriptionArticle(request.getDescriptionArticle())
                 .livraisonGratuite(Boolean.TRUE.equals(request.getLivraisonGratuite()))
                 .montantMarchandises(request.getMontantMarchandises())
+                .partenaire(partenaire)
                 .build();
 
         // Résoudre les produits et créer les lignes
