@@ -269,4 +269,30 @@ public class AuthService {
         return userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("Utilisateur introuvable: " + username));
     }
+
+    @Transactional
+    public User updateLivreur(Long id, com.expressservices.auth.dto.UpdateUserRequest request) {
+        User user = getUserEntityById(id);
+        
+        if (request.getNom() != null) user.setNom(request.getNom());
+        if (request.getPrenom() != null) user.setPrenom(request.getPrenom());
+        if (request.getEmail() != null) {
+            user.setEmail(request.getEmail().trim().isEmpty() ? null : request.getEmail().trim());
+        }
+        if (request.getTelephone() != null) user.setTelephone(request.getTelephone());
+        
+        if (request.getPassword() != null && !request.getPassword().trim().isEmpty()) {
+            user.setPassword(passwordEncoder.encode(request.getPassword()));
+        }
+        
+        return userRepository.save(user);
+    }
+
+    @Transactional
+    public void deleteUser(Long id) {
+        User user = getUserEntityById(id);
+        // On pourrait vérifier si l'utilisateur a des commandes assignées et empêcher sa suppression
+        // Mais dans cette implémentation directe, on le supprime (attention aux clés étrangères).
+        userRepository.delete(user);
+    }
 }

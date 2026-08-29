@@ -85,4 +85,18 @@ public class AuthController {
         authService.changePassword(principal.getName(), request);
         return ResponseEntity.ok().build();
     }
+
+    @PutMapping("/livreurs/{id}")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<UserResponse> updateLivreur(@PathVariable Long id, @RequestBody com.expressservices.auth.dto.UpdateUserRequest request) {
+        User user = authService.updateLivreur(id, request);
+        return ResponseEntity.ok(UserResponse.fromEntity(user));
+    }
+
+    @DeleteMapping("/livreurs/{id}")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
+        authService.deleteUser(id);
+        return ResponseEntity.noContent().build();
+    }
 }

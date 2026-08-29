@@ -40,4 +40,11 @@ public class PartenaireController {
     public ResponseEntity<PartenaireResponse> updatePartenaire(@PathVariable Long id, @RequestBody PartenaireRequest request) {
         return ResponseEntity.ok(partenaireService.updatePartenaire(id, request));
     }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<Void> deletePartenaire(@PathVariable Long id) {
+        partenaireService.deletePartenaire(id);
+        return ResponseEntity.noContent().build();
+    }
 }

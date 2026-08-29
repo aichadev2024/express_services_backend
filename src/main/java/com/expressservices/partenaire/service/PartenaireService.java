@@ -78,4 +78,9 @@ public class PartenaireService {
             return partenaireRepository.save(nouveauPartenaire);
         });
     }
+
+    public void deletePartenaire(Long id) {
+        Partenaire partenaire = getPartenaireEntityById(id);
+        partenaireRepository.delete(partenaire);
+    }
 }
