@@ -99,4 +99,11 @@ public class AuthController {
         authService.deleteUser(id);
         return ResponseEntity.noContent().build();
     }
+
+    @PutMapping("/livreurs/{id}/toggle-active")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<UserResponse> toggleUserActivation(@PathVariable Long id) {
+        User user = authService.toggleUserActivation(id);
+        return ResponseEntity.ok(UserResponse.fromEntity(user));
+    }
 }

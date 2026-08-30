@@ -56,6 +56,10 @@ public class User {
     @Builder.Default
     private boolean otpVerified = false;
 
+    @Column(name = "actif", nullable = false)
+    @Builder.Default
+    private boolean actif = true;
+
     @PrePersist
     protected void onCreate() {
         this.dateCreation = LocalDateTime.now();

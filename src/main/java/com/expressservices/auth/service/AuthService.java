@@ -75,6 +75,10 @@ public class AuthService {
         User user = userRepository.findByUsername(request.getUsername())
                 .orElseThrow(() -> new ResourceNotFoundException("Utilisateur introuvable"));
 
+        if (!user.isActif()) {
+            throw new org.springframework.security.access.AccessDeniedException("Ce compte est banni ou désactivé.");
+        }
+
         if (!user.isOtpVerified()) {
             if (user.getOtpCode() == null || user.getOtpExpiry() == null || user.getOtpExpiry().isBefore(java.time.LocalDateTime.now())) {
                 generateAndSendOtp(user, "[Déjà configuré]");
@@ -295,7 +299,16 @@ public class AuthService {
             userRepository.delete(user);
             userRepository.flush(); // Trigger constraints immediately
         } catch (org.springframework.dao.DataIntegrityViolationException e) {
-            throw new IllegalArgumentException("Impossible de supprimer ce compte : il est lié à des commandes existantes dans l'historique. Veuillez le détacher des commandes ou le désactiver.");
+            // Si on ne peut pas supprimer (historique existant), on désactive le compte
+            user.setActif(false);
+            userRepository.save(user);
         }
+    }
+
+    @Transactional
+    public User toggleUserActivation(Long id) {
+        User user = getUserEntityById(id);
+        user.setActif(!user.isActif());
+        return userRepository.save(user);
     }
 }

@@ -22,6 +22,7 @@ public class UserResponse {
     private String role;
     private String photoUrl;
     private LocalDateTime dateCreation;
+    private boolean actif;
 
     public static UserResponse fromEntity(User user) {
         return UserResponse.builder()
@@ -34,6 +35,7 @@ public class UserResponse {
                 .role(user.getRole().name())
                 .photoUrl(user.getPhotoUrl())
                 .dateCreation(user.getDateCreation())
+                .actif(user.isActif())
                 .build();
     }
 }
