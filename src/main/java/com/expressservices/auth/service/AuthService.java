@@ -291,8 +291,11 @@ public class AuthService {
     @Transactional
     public void deleteUser(Long id) {
         User user = getUserEntityById(id);
-        // On pourrait vérifier si l'utilisateur a des commandes assignées et empêcher sa suppression
-        // Mais dans cette implémentation directe, on le supprime (attention aux clés étrangères).
-        userRepository.delete(user);
+        try {
+            userRepository.delete(user);
+            userRepository.flush(); // Trigger constraints immediately
+        } catch (org.springframework.dao.DataIntegrityViolationException e) {
+            throw new IllegalArgumentException("Impossible de supprimer ce compte : il est lié à des commandes existantes dans l'historique. Veuillez le détacher des commandes ou le désactiver.");
+        }
     }
 }
