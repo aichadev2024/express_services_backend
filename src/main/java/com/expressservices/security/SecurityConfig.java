@@ -51,6 +51,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/produits/stats/partenaire/**").permitAll() // Stats de stock d'un partenaire (pas de compte)
                 .requestMatchers(HttpMethod.GET, "/api/partenaires/**").permitAll() // Liste des partenaires publique (choix d'identite sans compte)
                 .requestMatchers("/h2-console/**").permitAll()
+                .requestMatchers("/error").permitAll()
                 .anyRequest().authenticated()
             )
             .sessionManagement(session -> session
