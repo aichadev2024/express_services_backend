@@ -100,6 +100,20 @@ public class CommandeController {
         return ResponseEntity.ok(response);
     }
 
+    @PutMapping("/{id}/quartier")
+    public ResponseEntity<CommandeResponse> updateQuartier(
+            @PathVariable Long id,
+            @RequestBody Map<String, Long> payload,
+            Authentication authentication) {
+        
+        Long quartierId = payload.get("quartierId");
+        if (quartierId == null) {
+            throw new IllegalArgumentException("Le paramètre quartierId est obligatoire.");
+        }
+        CommandeResponse response = commandeService.updateQuartier(id, quartierId, authentication.getName());
+        return ResponseEntity.ok(response);
+    }
+
     @PutMapping("/{id}/status")
     public ResponseEntity<CommandeResponse> updateStatus(
             @PathVariable Long id,

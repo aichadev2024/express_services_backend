@@ -246,6 +246,25 @@ public class CommandeService {
         return mapToResponse(commandeRepository.save(commande));
     }
 
+    public CommandeResponse updateQuartier(Long id, Long quartierId, String usernameFromAuth) {
+        Commande commande = commandeRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Commande introuvable avec ID: " + id));
+
+        User currentUser = authService.getUserEntityByUsername(usernameFromAuth);
+
+        // Security check: Livreurs can only update their assigned orders
+        if (currentUser.getRole() == Role.ROLE_LIVREUR) {
+            if (commande.getLivreur() == null || !commande.getLivreur().getId().equals(currentUser.getId())) {
+                throw new org.springframework.security.access.AccessDeniedException("Vous n'êtes pas assigné à cette commande.");
+            }
+        }
+
+        Quartier nouveauQuartier = quartierService.getQuartierById(quartierId);
+        commande.setQuartier(nouveauQuartier);
+        
+        return mapToResponse(commandeRepository.save(commande));
+    }
+
     public CommandeResponse updateStatus(Long id, String statutStr, String usernameFromAuth) {
         return updateStatus(id, statutStr, null, usernameFromAuth);
     }
