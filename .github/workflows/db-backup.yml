@@ -11,7 +11,7 @@ concurrency:
 
 env:
   # Must be >= the major version of the production PostgreSQL server.
-  PG_CLIENT_VERSION: "17"
+  PG_CLIENT_VERSION: "18"
   RETENTION_DAYS: "30"
   AWS_DEFAULT_REGION: auto
   AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
