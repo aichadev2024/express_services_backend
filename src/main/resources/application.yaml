@@ -45,6 +45,13 @@ brevo:
   sender-email: ${BREVO_SENDER_EMAIL:expressesrvc@gmail.com}
   sender-name: ${BREVO_SENDER_NAME:Express Services}
 
+# Stockage des photos de profil sur Cloudflare R2 (repli sur le disque local si non configure)
+r2:
+  account-id: ${R2_ACCOUNT_ID:}
+  access-key-id: ${R2_ACCESS_KEY_ID:}
+  secret-access-key: ${R2_SECRET_ACCESS_KEY:}
+  bucket: ${R2_BUCKET:}
+
 # Configuration du port de l'application backend
 server:
   port: ${PORT:8080}

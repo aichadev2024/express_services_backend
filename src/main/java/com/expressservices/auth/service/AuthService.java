@@ -30,11 +30,14 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final CustomUserDetailsService userDetailsService;
     private final EmailService emailService;
+    private final com.expressservices.storage.PhotoStorageService photoStorageService;
 
     public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder,
                        JwtUtils jwtUtils, AuthenticationManager authenticationManager,
                        CustomUserDetailsService userDetailsService,
-                       EmailService emailService) {
+                       EmailService emailService,
+                       com.expressservices.storage.PhotoStorageService photoStorageService) {
+        this.photoStorageService = photoStorageService;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtUtils = jwtUtils;
@@ -241,22 +244,12 @@ public class AuthService {
                 .orElseThrow(() -> new ResourceNotFoundException("Utilisateur introuvable: " + username));
 
         try {
-            java.nio.file.Path uploadDir = java.nio.file.Paths.get("uploads", "profiles");
-            if (!java.nio.file.Files.exists(uploadDir)) {
-                java.nio.file.Files.createDirectories(uploadDir);
+            String extension = com.expressservices.storage.PhotoTypes.safeExtension(file.getOriginalFilename());
+            String filename = "profile_" + user.getId() + "_" + java.util.UUID.randomUUID() + extension;
+            try (java.io.InputStream content = file.getInputStream()) {
+                photoStorageService.save(filename, content, file.getSize(),
+                        com.expressservices.storage.PhotoTypes.contentTypeFor(filename));
             }
-
-            String originalFilename = file.getOriginalFilename();
-            String extension = "";
-            if (originalFilename != null && originalFilename.contains(".")) {
-                extension = originalFilename.substring(originalFilename.lastIndexOf("."));
-            } else {
-                extension = ".jpg";
-            }
-
-            String filename = "profile_" + user.getId() + "_" + java.util.UUID.randomUUID().toString() + extension;
-            java.nio.file.Path filePath = uploadDir.resolve(filename);
-            java.nio.file.Files.copy(file.getInputStream(), filePath, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
 
             String photoUrl = "/uploads/profiles/" + filename;
             user.setPhotoUrl(photoUrl);
