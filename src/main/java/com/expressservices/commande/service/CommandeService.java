@@ -65,7 +65,8 @@ public class CommandeService {
                 .dateHeureSouhaitee(request.getDateHeureSouhaitee())
                 .statut(StatutCommande.EN_ATTENTE)
                 .descriptionArticle(request.getDescriptionArticle())
-                .livraisonGratuite(Boolean.TRUE.equals(request.getLivraisonGratuite()))
+                .livraisonGratuite(Boolean.TRUE.equals(request.getLivraisonGratuite())
+                        || (partenaire != null && Boolean.TRUE.equals(partenaire.getLivraisonGratuite())))
                 .montantMarchandises(request.getMontantMarchandises())
                 .partenaire(partenaire)
                 .build();

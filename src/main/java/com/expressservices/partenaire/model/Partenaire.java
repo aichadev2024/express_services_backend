@@ -20,4 +20,8 @@ public class Partenaire {
 
     @Column(nullable = false)
     private String telephone;
+
+    @Column(name = "livraison_gratuite", nullable = false)
+    @Builder.Default
+    private Boolean livraisonGratuite = false;
 }

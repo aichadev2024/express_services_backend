@@ -1,0 +1,1 @@
+ALTER TABLE partenaires ADD COLUMN livraison_gratuite BOOLEAN DEFAULT FALSE NOT NULL;

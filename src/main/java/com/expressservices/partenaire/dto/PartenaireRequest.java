@@ -10,4 +10,5 @@ import lombok.NoArgsConstructor;
 public class PartenaireRequest {
     private String nom;
     private String telephone;
+    private Boolean livraisonGratuite;
 }

@@ -36,6 +36,7 @@ public class PartenaireService {
         Partenaire partenaire = Partenaire.builder()
                 .nom(request.getNom())
                 .telephone(request.getTelephone())
+                .livraisonGratuite(Boolean.TRUE.equals(request.getLivraisonGratuite()))
                 .build();
         return PartenaireResponse.fromEntity(partenaireRepository.save(partenaire));
     }
@@ -50,6 +51,9 @@ public class PartenaireService {
 
         partenaire.setNom(request.getNom());
         partenaire.setTelephone(request.getTelephone());
+        if (request.getLivraisonGratuite() != null) {
+            partenaire.setLivraisonGratuite(request.getLivraisonGratuite());
+        }
         return PartenaireResponse.fromEntity(partenaireRepository.save(partenaire));
     }
 
@@ -70,7 +74,7 @@ public class PartenaireService {
         if (nom == null || nom.trim().isEmpty()) {
             return null;
         }
-        return partenaireRepository.findByNom(nom.trim()).orElseGet(() -> {
+        return partenaireRepository.findFirstByNomIgnoreCaseOrderByIdAsc(nom.trim()).orElseGet(() -> {
             Partenaire nouveauPartenaire = Partenaire.builder()
                     .nom(nom.trim())
                     .telephone(telephone != null ? telephone.trim() : "")

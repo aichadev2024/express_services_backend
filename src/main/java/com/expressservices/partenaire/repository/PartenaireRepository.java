@@ -8,4 +8,5 @@ import org.springframework.stereotype.Repository;
 public interface PartenaireRepository extends JpaRepository<Partenaire, Long> {
     boolean existsByNom(String nom);
     java.util.Optional<Partenaire> findByNom(String nom);
+    java.util.Optional<Partenaire> findFirstByNomIgnoreCaseOrderByIdAsc(String nom);
 }

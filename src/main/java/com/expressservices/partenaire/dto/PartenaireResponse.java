@@ -14,12 +14,14 @@ public class PartenaireResponse {
     private Long id;
     private String nom;
     private String telephone;
+    private Boolean livraisonGratuite;
 
     public static PartenaireResponse fromEntity(Partenaire partenaire) {
         return PartenaireResponse.builder()
                 .id(partenaire.getId())
                 .nom(partenaire.getNom())
                 .telephone(partenaire.getTelephone())
+                .livraisonGratuite(Boolean.TRUE.equals(partenaire.getLivraisonGratuite()))
                 .build();
     }
 }

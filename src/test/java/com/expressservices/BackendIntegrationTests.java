@@ -11,6 +11,9 @@ import com.expressservices.commande.dto.CommandeResponse;
 import com.expressservices.commande.dto.LigneProduitRequest;
 import com.expressservices.commande.model.StatutCommande;
 import com.expressservices.commande.service.CommandeService;
+import com.expressservices.partenaire.dto.PartenaireRequest;
+import com.expressservices.partenaire.dto.PartenaireResponse;
+import com.expressservices.partenaire.service.PartenaireService;
 import com.expressservices.produit.dto.ProduitRequest;
 import com.expressservices.produit.dto.ProduitResponse;
 import com.expressservices.produit.service.ProduitService;
@@ -43,6 +46,9 @@ class BackendIntegrationTests {
 
     @Autowired
     private ProduitService produitService;
+
+    @Autowired
+    private PartenaireService partenaireService;
 
     @Autowired
     private com.expressservices.auth.repository.UserRepository userRepository;
@@ -201,5 +207,33 @@ class BackendIntegrationTests {
         assertEquals(BigDecimal.valueOf(15000), res.getMontantProduits());
         assertEquals(BigDecimal.valueOf(15000), res.getMontantTotal());
         assertEquals(BigDecimal.valueOf(15000), res.getMontantAEncaisser());
+    }
+
+    @Test
+    void testLivraisonOfferteAutomatiquePourPartenaire() {
+        Quartier q = quartierService.getAllQuartiers().get(0);
+        PartenaireResponse offert = partenaireService.createPartenaire(
+                new PartenaireRequest("Boutique Livraison Offerte", "+22370000001", true));
+        PartenaireResponse normal = partenaireService.createPartenaire(
+                new PartenaireRequest("Boutique Standard", "+22370000002", false));
+
+        CommandeResponse gratuite = commandeService.createCommande(CommandeRequest.builder()
+                .nomClient("Client A").telephoneClient("+22366000001")
+                .quartierId(q.getId()).adressePrecise("Rue 1")
+                .partenaireId(offert.getId())
+                .montantMarchandises(BigDecimal.valueOf(10000))
+                .build());
+        assertTrue(gratuite.getLivraisonGratuite());
+        assertEquals(0.0, gratuite.getTarifLivraisonEffective());
+        assertEquals(0, BigDecimal.valueOf(10000).compareTo(gratuite.getMontantAEncaisser()));
+
+        CommandeResponse payante = commandeService.createCommande(CommandeRequest.builder()
+                .nomClient("Client B").telephoneClient("+22366000002")
+                .quartierId(q.getId()).adressePrecise("Rue 2")
+                .partenaireId(normal.getId())
+                .montantMarchandises(BigDecimal.valueOf(10000))
+                .build());
+        assertFalse(payante.getLivraisonGratuite());
+        assertEquals(q.getTarifLivraison(), payante.getTarifLivraisonEffective());
     }
 }
